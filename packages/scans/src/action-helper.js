@@ -2,7 +2,6 @@ const fs = require('fs');
 const _ = require('lodash');
 const readline = require('readline');
 const AdmZip = require('adm-zip');
-const request = require('request');
 const artifact = require('@actions/artifact');
 
 function createReadStreamSafe(filename, options) {
@@ -41,7 +40,7 @@ let actionHelper = {
                 }
             }
         } catch (err) {
-            console.log(`Error when reading the rules file: ${tsvFile}`)
+            console.log(`Error when reading the rules file: ${tsvFile}`);
         }
 
         return plugins;
@@ -60,12 +59,12 @@ let actionHelper = {
                 if (site.alerts.length !== 0) {
                     msg = `${msg} ${TAB} **New Alerts** ${NXT_LINE}`;
                     site.alerts.forEach((alert) => {
-                        msg = msg + TAB + `${BULLET} **${alert.name}** [${alert.pluginid}] total: ${alert.instances.length}:  ${NXT_LINE}`
+                        msg = msg + TAB + `${BULLET} **${alert.name}** [${alert.pluginid}] total: ${alert.instances.length}:  ${NXT_LINE}`;
 
                         for (let i = 0; i < alert['instances'].length; i++) {
                             if (i >= instanceCount) {
                                 msg = msg + TAB + TAB + `${BULLET} .. ${NXT_LINE}`;
-                                break
+                                break;
                             }
                             let instance = alert['instances'][i];
                             msg = msg + TAB + TAB + `${BULLET} [${instance.uri}](${instance.uri}) ${NXT_LINE}`;
@@ -203,6 +202,19 @@ let actionHelper = {
             }
 
             if (artifactID !== undefined) {
+	            // TODO new
+                console.log(`SBSB new code`); // TODO
+                const zip = await octokit.rest.actions.downloadArtifact({
+                    owner: owner,
+                    repo: repo,
+                    artifact_id: artifactID,
+                    archive_format: "zip",
+                })
+                
+                // fs.writeFileSync(`${workSpace}/zap_scan.zip`, Buffer.from(zip.data), 'binary')
+                
+                const adm = new AdmZip(Buffer.from(zip.data))
+				/*
                 let download = await octokit.actions.downloadArtifact({
                     owner: owner,
                     repo: repo,
@@ -217,12 +229,14 @@ let actionHelper = {
                             resolve();
                         }));
 
-                let zip = new AdmZip(`${workSpace}/zap_scan.zip`);
-                let zipEntries = zip.getEntries();
+                //let zip = new AdmZip(`${workSpace}/zap_scan.zip`);
+                */
+                let zipEntries = adm.getEntries();
 
                 await zipEntries.forEach(function (zipEntry) {
                     if (zipEntry.entryName === "report_json.json") {
                         previousReport = JSON.parse(zipEntry.getData().toString('utf8'));
+                        console.log(`SBSB got new report`); // TODO
                     }
                 });
             }
